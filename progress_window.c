@@ -1,6 +1,7 @@
-#include <ncurses.h>
+#include <form.h> // Already includes ncurses
 #include <unistd.h>  // For usleep
 #include <pthread.h>
+#include <stdlib.h>
 
 // Global variable that determines if the counter should stop
 int stop_loop = 0;
@@ -8,12 +9,51 @@ int stop_loop = 0;
 // Define mutex
 pthread_mutex_t mutex;
 
+
+// Save the contents of the window into the provided 2-dimensional array
+void save_window_contents(WINDOW *win, char **window_contents, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            window_contents[i][j] = mvwinch(win, i, j);
+        }
+    }
+}
+
+// Restore the window contents from the provided 2-dimensional array
+void restore_window_contents(WINDOW *win, char **window_contents, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            mvwprintw(win, i, j, "%c", window_contents[i][j]);
+        }
+    }
+    box(win, 0, 0);
+    // wrefresh(win);
+}
+
+
+// Parallel function to manage the pop up window
 void* popup_thread(void* vargp)
 {
-    int is_active = 1;
-    WINDOW* popup = newwin(LINES/4, COLS/2, 1, COLS/4);
+    int is_active = 1; // Flag variable to hide or show the pop up
+    
+    const char *filename = ".popup";
+    int const popup_width = COLS / 2;
+    int const popup_height = LINES / 4;
+    WINDOW* popup = newwin(popup_height, popup_width, 1, popup_width / 2);
     box(popup, 0, 0);
+    mvwaddstr(popup, 1, 1, "Hello");
+    mvwaddstr(popup, 2, 1, "world");
+    // wrefresh(popup);
 
+    // Memory area to store window contents
+    char **window_contents = malloc(popup_height * sizeof(char *));
+    for (int i = 0; i < popup_height; i++)
+    {
+        window_contents[i] = malloc(popup_width * sizeof(char));
+    }
+    save_window_contents(popup, window_contents, popup_height, popup_width);
+
+    // Interaction loop
     int ch;
     while(ch != 'e')
     {
@@ -24,13 +64,14 @@ void* popup_thread(void* vargp)
             if (is_active == 1) 
             {
                 // Empty the screen
+                save_window_contents(popup, window_contents, popup_height, popup_width);
                 werase(popup);
                 is_active = 0;
             } 
             else 
             {
                 // Draw again
-                box(popup, 0, 0);
+                restore_window_contents(popup, window_contents, popup_height, popup_width);
                 is_active = 1;
             }
         } 
@@ -40,6 +81,7 @@ void* popup_thread(void* vargp)
     werase(popup);
     wrefresh(popup);
     delwin(popup);
+    free(window_contents);
 
     // Locks the mutex to update the global variable to stop the counter in 
     // main thread
@@ -75,9 +117,10 @@ int main() {
     mvaddch(starty, startx + bar_width + 1, ']');
     refresh();
     
-    // Start threads
+    // Start child thread for pop up window 
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, popup_thread, NULL);
+
     // Initialize mutex
     pthread_mutex_init(&mutex, NULL);
 
@@ -90,7 +133,7 @@ int main() {
     float accumulate = ratio;
 
     for (int second = 0; second <= seconds; second++) {
-        // Locks the mutex, so only 
+        // Locks the mutex, so only main thread can read
         pthread_mutex_lock(&mutex);
         if (stop_loop == 1)
         {
