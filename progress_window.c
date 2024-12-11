@@ -41,6 +41,7 @@ void* popup_thread(void* vargp)
     int const popup_height = LINES / 4;
     WINDOW* popup = newwin(popup_height, popup_width, 1, popup_width / 2);
     box(popup, 0, 0);
+    wtimeout(popup,0);
     mvwaddstr(popup, 1, 1, "Hello");
     mvwaddstr(popup, 2, 1, "world");
     // wrefresh(popup);
@@ -57,6 +58,14 @@ void* popup_thread(void* vargp)
     int ch;
     while(ch != 'e')
     {
+        pthread_mutex_lock(&mutex);
+        int local_stop_loop = stop_loop;
+        pthread_mutex_unlock(&mutex);
+        if (local_stop_loop) 
+        {
+            break;
+        }
+
         // If user presses q, print popup
         ch = wgetch(popup);
         if (ch == 'q')
@@ -109,7 +118,7 @@ int main() {
     int counter_startx = (cols - 5) / 2;
 
     // Time parameters
-    int minutes = 2; 
+    int minutes = 1; 
     int seconds = minutes * 60;
 
     // Draw the brackets '[' and ']' for the progress bar: Initial print
@@ -135,11 +144,12 @@ int main() {
     for (int second = 0; second <= seconds; second++) {
         // Locks the mutex, so only main thread can read
         pthread_mutex_lock(&mutex);
-        if (stop_loop == 1)
+        int local_stop_loop = stop_loop;
+        pthread_mutex_unlock(&mutex);
+        if (local_stop_loop)
         {
             break;
         }
-        pthread_mutex_unlock(&mutex);
 
         // Format counter
         mvprintw(counter_starty, counter_startx, "%02d:%02d", minutes_counter, seconds_counter);
@@ -171,6 +181,13 @@ int main() {
 
         sleep(1);  // Pause for 1 second
     }
+
+    pthread_mutex_lock(&mutex);
+    if (!stop_loop)
+    {
+        stop_loop = 1;
+    }
+    pthread_mutex_unlock(&mutex);
 
     // Once the loop is broken (for any reason...) wait for the child thread to join
     pthread_join(thread_id, NULL);
