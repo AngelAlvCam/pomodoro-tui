@@ -4,10 +4,6 @@
 #include <form.h>
 #include <unistd.h>  // For usleep
 
-typedef struct _PANEL_DATA {
-	int hide;	/* TRUE if panel is hidden */
-}PANEL_DATA;
-
 int main() {
     initscr();                // Start ncurses mode
     noecho();                 // Disable character echoing
@@ -67,19 +63,11 @@ int main() {
     //wrefresh(popup);
 
     // PANELs config
-    PANEL *my_panels[2];
-    PANEL_DATA panel_datas[2];
-    PANEL_DATA *temp;
-
-    my_panels[0] = new_panel(stdscr);
-    my_panels[1] = new_panel(popup);
+    PANEL *my_panel;
+    int is_popup_active = FALSE;
+    my_panel = new_panel(popup);
+    hide_panel(my_panel);
     
-    panel_datas[0].hide = FALSE;
-    panel_datas[1].hide = TRUE;
-
-    set_panel_userptr(my_panels[0], &panel_datas[0]);
-    set_panel_userptr(my_panels[1], &panel_datas[1]);
-
     update_panels();
     doupdate();
 
@@ -95,8 +83,7 @@ int main() {
     int ch;
     while (second_counter <= total_seconds) {
         // Check if popup is active
-        temp = (PANEL_DATA*)panel_userptr(my_panels[1]);
-        if (temp->hide == FALSE)
+        if (is_popup_active)
         {
             // if it is active, close with esc and put characters in form
             ch = wgetch(popup); // read input from popup window
@@ -104,8 +91,8 @@ int main() {
             {
             // Case to quit the popup by pressing esc
             case 27:
-                hide_panel(my_panels[1]);
-                temp->hide = TRUE;
+                hide_panel(my_panel);
+                is_popup_active = FALSE;
                 break;
 
             // Cases for form manipulation
@@ -141,8 +128,8 @@ int main() {
             ch = getch(); // read input from default window (stdscr)
             if (ch == 27) 
             {
-                show_panel(my_panels[1]);
-                temp->hide = FALSE;
+                show_panel(my_panel);
+                is_popup_active = TRUE;
             }
         }
 
