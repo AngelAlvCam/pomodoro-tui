@@ -1,3 +1,5 @@
+#include <string.h>
+#include <form.h>
 #include <ncurses.h>
 #include <unistd.h>  // For usleep
 
@@ -6,7 +8,7 @@ int main() {
     noecho();                 // Disable character echoing
     curs_set(0);              // Hide the cursor
     timeout(0);               // Non-blocking input
-    box(stdscr, 0, 0);        // Draw a border around the window
+    box(stdscr, 0, 0);        // Draw a border around the default window
 
     int rows, cols;
     getmaxyx(stdscr, rows, cols);  // Get screen dimensions
@@ -24,18 +26,37 @@ int main() {
     int minutes = 1;
     int total_seconds = minutes * 60;
 
-    // Draw the brackets '[' and ']' for the progress bar
+    // Draw the brackets '[' and ']' for the progress bar in the default window
     mvaddch(starty, startx - 1, '[');
     mvaddch(starty, startx + bar_width, ']');
-    refresh();
+    refresh();  // This only affects default window
 
-    // Popup window parameters
-    int popup_active = 0;
-    int popup_height = 10;
-    int popup_width = 30;
-    int popup_starty = (rows - popup_height + 15) / 2;
-    int popup_startx = (cols - popup_width) / 2;
-    WINDOW *popup = NULL;
+    // Popup window parameters and form configuration
+    FIELD *field[2];
+    FORM *my_form;
+    WINDOW *popup;
+    
+    field[0] = new_field(1, 14, 0, 0, 0, 0);
+    field[1] = NULL;
+
+    set_field_back(field[0], A_UNDERLINE);
+    field_opts_off(field[0], O_AUTOSKIP);
+
+    my_form = new_form(field);
+
+    scale_form(my_form, &rows, &cols);
+
+    popup = newwin(rows + 4, cols + 4, 4, 4);
+    keypad(popup, TRUE);
+
+    set_form_win(my_form, popup);
+    set_form_sub(my_form, derwin(popup, rows, cols, 2, 2));
+
+    box(popup, 0, 0);
+
+    wtimeout(popup, 0);
+    post_form(my_form);
+    wrefresh(popup);
 
     // Calculate bar increment ratio
     float bar_ratio = (float)bar_width / total_seconds;
@@ -46,28 +67,37 @@ int main() {
     int second_counter = 0;
     int minutes_display = 0, seconds_display = 0;
     int micro_accumulator = 0;
+    int ch;
     while (second_counter <= total_seconds) {
 
         // Handle popup window interaction
-        int ch = getch();
-        if (ch == 'q') {
-            if (!popup_active) {
-                // Activate popup
-                popup_active = 1;
-                popup = newwin(popup_height, popup_width, popup_starty, popup_startx);
-                box(popup, 0, 0);
-                mvwprintw(popup, 2, 4, "Popup Window");
-                mvwprintw(popup, 5, 4, "Press 'q' to close");
-                wrefresh(popup);
-            } else {
-                // Deactivate popup
-                popup_active = 0;
-                werase(popup);
-                wrefresh(popup);
-                delwin(popup);
-            }
-        } else if (ch == 'e') {
-            break;  // Exit the program
+        ch = wgetch(popup);
+        
+        switch(ch)
+        {
+            case KEY_LEFT:
+                form_driver(my_form, REQ_PREV_CHAR);
+                break;
+            case KEY_RIGHT:
+                form_driver(my_form, REQ_RIGHT_CHAR);
+                break;
+            //case for del 
+            case '\n':
+                // Change to NULL field to force sync
+                form_driver(my_form, REQ_NEXT_FIELD);
+                if (strcmp(field_buffer(field[0], 0), "I want to quit") == 0)
+                {
+                    total_seconds = -1;
+                } 
+                else 
+                {
+                    mvwaddstr(popup,0,0,"Try again...");
+                }
+                form_driver(my_form, REQ_DEL_LINE);
+                break;
+            default:
+                form_driver(my_form, ch);
+                break;
         }
 
         // Print counter
@@ -97,14 +127,19 @@ int main() {
 
     }
 
-    // Configure getch to be blocking
+    // Unpost form and free memory 
+    unpost_form(my_form);
+    free_form(my_form);
+    free_field(field[0]);
+
+    // Configure getch to be blocking in the default screen, 
     timeout(-1);
 
-    beep();
-
-    // Final message
+    // Final message printed in the default window
     mvprintw(1, (cols / 2) - 10, "Press any key to exit.");
     refresh();
+
+    beep(); // Makes a sound in the terminal before quitting
     getch();  // Wait until a key is pressed
 
     endwin();  // Clean up and restore terminal to normal
