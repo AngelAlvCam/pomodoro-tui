@@ -13,16 +13,23 @@ int main() {
     timeout(0);               // Non-blocking input
     box(stdscr, 0, 0);        // Draw a border around the default window
 
-    int rows, cols;
-    getmaxyx(stdscr, rows, cols);  // Get screen dimensions
+    // int rows, cols;
+    // getmaxyx(stdscr, rows, cols);  // Get screen dimensions
+    
+    // Create window for progress bar
+    WINDOW* progress_window = newwin(LINES - 10, COLS - 10, 5, 5);
+    box(progress_window, 0, 0);
+    wtimeout(progress_window, 0);
 
     // Define progress bar parameters
+    int cols, rows;
+    getmaxyx(progress_window, rows, cols);
     int bar_width = 60;
-    int starty = rows / 2;
-    int startx = (cols - bar_width) / 2;
+    int bar_starty = rows / 2;
+    int bar_startx = (cols - bar_width) / 2;
 
     // Define counter parameters; format is {00:00}, len = 5
-    int counter_starty = starty - 2;
+    int counter_starty = bar_starty - 2;
     int counter_startx = (cols - 5) / 2;
 
     // Time parameters
@@ -30,15 +37,14 @@ int main() {
     int total_seconds = minutes * 60;
 
     // Draw the brackets '[' and ']' for the progress bar in the default window
-    mvaddch(starty, startx - 1, '[');
-    mvaddch(starty, startx + bar_width, ']');
-    refresh();  // This only affects default window
-
+    mvwaddch(progress_window, bar_starty, bar_startx - 1, '[');
+    mvwaddch(progress_window, bar_starty, bar_startx + bar_width, ']');
+    // refresh();  // This only affects default window
 
     // Popup window parameters and form configuration
     FIELD *field[2];
     FORM *my_form;
-    WINDOW *popup;
+    WINDOW *popup_window;
 
     // Set up the field
     field[0] = new_field(1, 14, 0, 0, 0, 0);
@@ -48,26 +54,28 @@ int main() {
 
     // Create form
     my_form = new_form(field);
+    getmaxyx(stdscr, rows, cols);
     scale_form(my_form, &rows, &cols);
 
     // Create window to store form
-    popup = newwin(rows + 4, cols + 4, 4, 4);
-    keypad(popup, TRUE);
+    popup_window = newwin(rows + 4, cols + 4, 4, 4);
+    keypad(popup_window, TRUE);
 
     // Attach form to window
-    set_form_win(my_form, popup);
-    set_form_sub(my_form, derwin(popup, rows, cols, 2, 2));
+    set_form_win(my_form, popup_window);
+    set_form_sub(my_form, derwin(popup_window, rows, cols, 2, 2));
 
-    box(popup, 0, 0);
-    wtimeout(popup, 0);
+    box(popup_window, 0, 0);
+    wtimeout(popup_window, 0);
     post_form(my_form);
     //wrefresh(popup);
 
     // PANELs config
-    PANEL *my_panel;
+    PANEL *my_panel[2];
     int is_popup_active = FALSE;
-    my_panel = new_panel(popup);
-    hide_panel(my_panel);
+    my_panel[1] = new_panel(progress_window);
+    my_panel[2] = new_panel(popup_window);
+    hide_panel(my_panel[2]);
     
     update_panels();
     doupdate();
@@ -87,12 +95,12 @@ int main() {
         if (is_popup_active)
         {
             // if it is active, close with esc and put characters in form
-            ch = wgetch(popup); // read input from popup window
+            ch = wgetch(popup_window); // read input from popup window
             switch (ch)
             {
             // Case to quit the popup by pressing esc
             case 27:
-                hide_panel(my_panel);
+                hide_panel(my_panel[2]);
                 is_popup_active = FALSE;
                 break;
 
@@ -112,7 +120,7 @@ int main() {
                 } 
                 else 
                 {
-                    mvwaddstr(popup,0,0,"Try again...");
+                    mvwaddstr(popup_window,0,0,"Try again...");
                 }
                 form_driver(my_form, REQ_DEL_LINE);
                 break;
@@ -126,10 +134,10 @@ int main() {
         else
         {
             // else, if popup is not active... open it by pressing esc key
-            ch = getch(); // read input from default window (stdscr)
+            ch = wgetch(progress_window); // read input from default window (stdscr)
             if (ch == 27) 
             {
-                show_panel(my_panel);
+                show_panel(my_panel[2]);
                 is_popup_active = TRUE;
             }
         }
@@ -138,8 +146,8 @@ int main() {
         doupdate();
 
         // Print counter
-        mvprintw(counter_starty, counter_startx, "%02d:%02d", minutes_display, seconds_display);
-        refresh();
+        mvwprintw(progress_window, counter_starty, counter_startx, "%02d:%02d", minutes_display, seconds_display);
+        // refresh();
 
         // Update time and bar progress
         if (seconds_passed(1, &micro_accumulator))
@@ -151,7 +159,7 @@ int main() {
 
             // Checks if the conditions to shift cursor are filled
             if (col_trigger >= 1) {
-                mvaddch(starty, startx + current_col, '=');
+                mvwaddch(progress_window, bar_starty, bar_startx + current_col, '=');
                 col_trigger = 0;
                 current_col++;
             }
@@ -165,9 +173,12 @@ int main() {
     free_field(field[0]);
 
     // Delete popup window
-    werase(popup);
-    wrefresh(popup);
-    delwin(popup);
+    werase(popup_window);
+    wrefresh(popup_window);
+    delwin(popup_window);
+    werase(progress_window);
+    wrefresh(progress_window);
+    delwin(progress_window);
 
     // Configure getch to be blocking in the default screen, 
     timeout(-1);
