@@ -33,7 +33,7 @@ int main() {
     int counter_startx = (cols - 5) / 2;
 
     // Time parameters
-    int minutes = 1;
+    int minutes = 2;
     int total_seconds = minutes * 60;
 
     // Draw the brackets '[' and ']' for the progress bar in the default window
@@ -86,11 +86,12 @@ int main() {
     int current_col = 0;
 
     // Main loop
-    int second_counter = 0;
-    int minutes_display = 0, seconds_display = 0;
+    // int second_counter = 0;
+    int minutes_display = minutes, seconds_display = 0;
     int micro_accumulator = 0;
     int ch;
-    while (second_counter <= total_seconds) {
+    while (total_seconds >= 0)
+    {
         // Check if popup is active
         if (is_popup_active)
         {
@@ -108,9 +109,11 @@ int main() {
             case KEY_LEFT:
                 form_driver(my_form, REQ_PREV_CHAR);
                 break;
+
             case KEY_RIGHT:
                 form_driver(my_form, REQ_RIGHT_CHAR);
                 break;
+
             case '\n':
                 form_driver(my_form, REQ_NEXT_FIELD); // Change to NULL field to force sync
                 if (strcmp(field_buffer(field[0], 0), "I want to quit") == 0)
@@ -129,6 +132,7 @@ int main() {
             default:
                 form_driver(my_form, ch);
                 break;
+
             }
         }
         else
@@ -152,11 +156,10 @@ int main() {
         // Update time and bar progress
         if (seconds_passed(1, &micro_accumulator))
         {
-            second_counter++;
+            total_seconds--;
+            minutes_display = total_seconds / 60;
+            seconds_display = total_seconds % 60;
             
-            minutes_display = second_counter / 60;
-            seconds_display = second_counter % 60;
-
             // Checks if the conditions to shift cursor are filled
             if (col_trigger >= 1) {
                 mvwaddch(progress_window, bar_starty, bar_startx + current_col, '=');
