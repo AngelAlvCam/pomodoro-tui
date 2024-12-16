@@ -5,6 +5,7 @@
 
 int seconds_passed(int, int*);
 int run_timer(int);
+void run_alert();
 
 int main() {
     initscr();                // Start ncurses mode
@@ -18,6 +19,7 @@ int main() {
     if (run_timer(1))
     {
         mvprintw(1, 1, "Well done");
+        run_alert();
     }
     else
     {
@@ -236,4 +238,23 @@ int run_timer(int minutes)
     delwin(progress_window);
 
     return counter_status;
+}
+
+/*
+Function that triggers an alarm in the standard screen
+*/
+void run_alert()
+{
+    timeout(0); // Sets getch as non-blocking
+    int ch;
+    while(1)
+    {
+        beep();
+        ch = getch();
+        if (ch == 'q')
+        {
+            break;
+        }
+    }
+    timeout(-1);
 }
