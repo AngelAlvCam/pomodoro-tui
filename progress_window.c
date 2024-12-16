@@ -4,6 +4,7 @@
 #include <unistd.h>  // For usleep
 
 int seconds_passed(int, int*);
+int run_timer(int);
 
 int main() {
     initscr();                // Start ncurses mode
@@ -13,10 +14,58 @@ int main() {
     timeout(0);               // Non-blocking input
     box(stdscr, 0, 0);        // Draw a border around the default window
 
-    // int rows, cols;
-    // getmaxyx(stdscr, rows, cols);  // Get screen dimensions
-    
-    // Create window for progress bar
+    // Call run timer here
+    if (run_timer(1))
+    {
+        mvprintw(1, 1, "Well done");
+    }
+    else
+    {
+        mvprintw(1, 1, "Good luck next time");
+    }
+    refresh();
+
+    // Configure getch to be blocking in the default screen, 
+    timeout(-1);
+
+    beep(); // Makes a sound in the terminal before quitting
+    getch();  // Wait until a key is pressed
+
+    endwin();  // Clean up and restore terminal to normal
+    return 0;
+}
+
+/*
+target is a integer that refer to the expected amount of seconds to wait.
+counter is a pointer to the memory address of a second counter.
+*/
+int seconds_passed(int target, int* counter)
+{
+    const int time_step = 100000; // In microseconds
+
+    usleep(time_step);
+
+    if (*counter > target * 1000000)
+    {
+        // Trigger and restart the counter
+        *counter = 0;
+        return TRUE;
+    }
+    else 
+    {
+        (*counter) += time_step;
+        return FALSE;
+    }
+}
+
+/*
+Runs the timer and handles progress in a non-default window
+*/
+int run_timer(int minutes)
+{
+    /*
+    Creation of progress-bar/counter window 
+    */
     WINDOW* progress_window = newwin(LINES - 10, COLS - 10, 5, 5);
     box(progress_window, 0, 0);
     wtimeout(progress_window, 0);
@@ -33,7 +82,6 @@ int main() {
     int counter_startx = (cols - 5) / 2;
 
     // Time parameters
-    int minutes = 2;
     int total_seconds = minutes * 60;
 
     // Draw the brackets '[' and ']' for the progress bar in the default window
@@ -41,7 +89,7 @@ int main() {
     mvwaddch(progress_window, bar_starty, bar_startx + bar_width, ']');
     // refresh();  // This only affects default window
 
-    // Popup window parameters and form configuration
+    /* Creation of pop-up window with a form to quit */
     FIELD *field[2];
     FORM *my_form;
     WINDOW *popup_window;
@@ -70,7 +118,9 @@ int main() {
     post_form(my_form);
     //wrefresh(popup);
 
-    // PANELs config
+    /* 
+    Setting the windows as panels 
+    */
     PANEL *my_panel[2];
     int is_popup_active = FALSE;
     my_panel[1] = new_panel(progress_window);
@@ -84,6 +134,7 @@ int main() {
     float bar_ratio = (float)bar_width / total_seconds;
     float col_trigger = bar_ratio;
     int current_col = 0;
+    int counter_status = TRUE; 
 
     // Main loop
     // int second_counter = 0;
@@ -120,6 +171,7 @@ int main() {
                 {
                     // Condition to break the loop
                     total_seconds = -1;
+                    counter_status = FALSE;
                 } 
                 else 
                 {
@@ -183,39 +235,5 @@ int main() {
     wrefresh(progress_window);
     delwin(progress_window);
 
-    // Configure getch to be blocking in the default screen, 
-    timeout(-1);
-
-    // Final message printed in the default window
-    mvprintw(1, 1, "Press any key to exit.");
-    refresh();
-
-    beep(); // Makes a sound in the terminal before quitting
-    getch();  // Wait until a key is pressed
-
-    endwin();  // Clean up and restore terminal to normal
-    return 0;
-}
-
-/*
-target is a integer that refer to the expected amount of seconds to wait.
-counter is a pointer to the memory address of a second counter.
-*/
-int seconds_passed(int target, int* counter)
-{
-    const int time_step = 100000; // In microseconds
-
-    usleep(time_step);
-
-    if (*counter > target * 1000000)
-    {
-        // Trigger and restart the counter
-        *counter = 0;
-        return TRUE;
-    }
-    else 
-    {
-        (*counter) += time_step;
-        return FALSE;
-    }
+    return counter_status;
 }
