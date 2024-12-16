@@ -1,8 +1,9 @@
 #include <string.h>
-// ncurses is already included in panel.h and form.h
 #include <panel.h>
 #include <form.h>
 #include <unistd.h>  // For usleep
+
+int seconds_passed(int, int*);
 
 int main() {
     initscr();                // Start ncurses mode
@@ -141,13 +142,10 @@ int main() {
         refresh();
 
         // Update time and bar progress
-        usleep(100000);  // Sleep for 100 ms
-        micro_accumulator += 100000;
-
-        if (micro_accumulator >= 1000000) {  // 1 second elapsed
-            micro_accumulator = 0;
+        if (seconds_passed(1, &micro_accumulator))
+        {
             second_counter++;
-        
+            
             minutes_display = second_counter / 60;
             seconds_display = second_counter % 60;
 
@@ -157,7 +155,6 @@ int main() {
                 col_trigger = 0;
                 current_col++;
             }
-
             col_trigger += bar_ratio;
         }
     }
@@ -184,4 +181,27 @@ int main() {
 
     endwin();  // Clean up and restore terminal to normal
     return 0;
+}
+
+/*
+target is a integer that refer to the expected amount of seconds to wait.
+counter is a pointer to the memory address of a second counter.
+*/
+int seconds_passed(int target, int* counter)
+{
+    const int time_step = 100000; // In microseconds
+
+    usleep(time_step);
+
+    if (*counter > target * 1000000)
+    {
+        // Trigger and restart the counter
+        *counter = 0;
+        return TRUE;
+    }
+    else 
+    {
+        (*counter) += time_step;
+        return FALSE;
+    }
 }
