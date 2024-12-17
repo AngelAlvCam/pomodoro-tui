@@ -1,5 +1,6 @@
 #include <string.h>
 #include <ncurses.h>
+#include "progress_window.h"
 
 int timer(int);
 
@@ -41,7 +42,7 @@ int main()
         refresh();
 
         int ch = getch();
-        if (ch == 27)
+        if (ch == 'q' || ch == 27)
         {
             break;
         }
@@ -52,21 +53,23 @@ int main()
             case KEY_LEFT:
                 if (minutes > 5)
                 {
-                    minutes--;
+                    minutes -= 5;
                 }
                 break;
 
             case KEY_RIGHT:
                 if (minutes < 60)
                 {
-                    minutes++;
+                    minutes += 5;
                 }
                 break;
 
             case '\n':
                 // Start running app!
-                if (timer(minutes))
+                clear_line(stdscr, LINES / 2 - 2);
+                if (run_timer(1))
                 {
+                    run_alert();
                     message = "Well done!";
                 }
                 else
@@ -81,13 +84,7 @@ int main()
             }
         }
     }
-}
 
-/*
-This function runs the pomodoro timer given a value in minutes
-*/
-int timer(int minutes)
-{
-    
-    return TRUE;
+    endwin();
+    return 0;
 }
