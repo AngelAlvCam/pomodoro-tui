@@ -3,39 +3,39 @@
 #include <form.h>
 #include <unistd.h>  // For usleep
 
-int seconds_passed(int, int*);
-int run_timer(int);
-void run_alert();
-
-int main() {
-    initscr();                // Start ncurses mode
-    noecho();                 // Disable character echoing
-    raw();
-    curs_set(0);              // Hide the cursor
-    timeout(0);               // Non-blocking input
-    box(stdscr, 0, 0);        // Draw a border around the default window
-
-    // Call run timer here
-    if (run_timer(1))
-    {
-        mvprintw(1, 1, "Well done");
-        run_alert();
-    }
-    else
-    {
-        mvprintw(1, 1, "Good luck next time");
-    }
-    refresh();
-
-    // Configure getch to be blocking in the default screen, 
-    timeout(-1);
-
-    beep(); // Makes a sound in the terminal before quitting
-    getch();  // Wait until a key is pressed
-
-    endwin();  // Clean up and restore terminal to normal
-    return 0;
-}
+// int seconds_passed(int, int*);
+// int run_timer(int);
+// void run_alert();
+// 
+// int main() {
+//     initscr();                // Start ncurses mode
+//     noecho();                 // Disable character echoing
+//     raw();
+//     curs_set(0);              // Hide the cursor
+//     timeout(0);               // Non-blocking input
+//     box(stdscr, 0, 0);        // Draw a border around the default window
+// 
+//     // Call run timer here
+//     if (run_timer(1))
+//     {
+//         mvprintw(1, 1, "Well done");
+//         run_alert();
+//     }
+//     else
+//     {
+//         mvprintw(1, 1, "Good luck next time");
+//     }
+//     refresh();
+// 
+//     // Configure getch to be blocking in the default screen, 
+//     timeout(-1);
+// 
+//     beep(); // Makes a sound in the terminal before quitting
+//     getch();  // Wait until a key is pressed
+// 
+//     endwin();  // Clean up and restore terminal to normal
+//     return 0;
+// }
 
 /*
 target is a integer that refer to the expected amount of seconds to wait.
@@ -125,9 +125,9 @@ int run_timer(int minutes)
     */
     PANEL *my_panel[2];
     int is_popup_active = FALSE;
-    my_panel[1] = new_panel(progress_window);
-    my_panel[2] = new_panel(popup_window);
-    hide_panel(my_panel[2]);
+    my_panel[0] = new_panel(progress_window);
+    my_panel[1] = new_panel(popup_window);
+    hide_panel(my_panel[1]);
     
     update_panels();
     doupdate();
@@ -154,7 +154,7 @@ int run_timer(int minutes)
             {
             // Case to quit the popup by pressing esc
             case 27:
-                hide_panel(my_panel[2]);
+                hide_panel(my_panel[1]);
                 is_popup_active = FALSE;
                 break;
 
@@ -195,7 +195,7 @@ int run_timer(int minutes)
             ch = wgetch(progress_window); // read input from default window (stdscr)
             if (ch == 27) 
             {
-                show_panel(my_panel[2]);
+                show_panel(my_panel[1]);
                 is_popup_active = TRUE;
             }
         }
@@ -228,15 +228,22 @@ int run_timer(int minutes)
     unpost_form(my_form);
     free_form(my_form);
     free_field(field[0]);
+    free_field(field[1]);
+
+    del_panel(my_panel[0]);
+    del_panel(my_panel[1]);
 
     // Delete popup window
     werase(popup_window);
     wrefresh(popup_window);
     delwin(popup_window);
+
     werase(progress_window);
     wrefresh(progress_window);
     delwin(progress_window);
 
+    // del_panel(my_panel[0]);
+    // del_panel(my_panel[1]);
     return counter_status;
 }
 
