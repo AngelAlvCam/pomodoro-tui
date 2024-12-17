@@ -265,3 +265,10 @@ void run_alert()
     }
     timeout(-1);
 }
+
+void clear_line(WINDOW* win, int line_number)
+{
+    wmove(win, line_number, 0);
+    clrtoeol();
+    box(win, 0, 0);
+}
