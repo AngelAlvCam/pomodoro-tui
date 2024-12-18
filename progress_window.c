@@ -3,6 +3,16 @@
 #include <form.h>
 #include <unistd.h>  // For usleep
 
+/*
+Function to clear a line in a given boxed window
+*/
+void clear_line(WINDOW* win, int line_number)
+{
+    wmove(win, line_number, 0);
+    clrtoeol();
+    box(win, 0, 0);
+}
+
 /* This function creates a window that fits exactly in the middle of 
 a given parent window. */
 WINDOW* create_subwindow(WINDOW* parent, float scale)
@@ -79,6 +89,53 @@ int seconds_passed(int target, int* counter)
 }
 
 /*
+Function that prints a string in the middle of a given window, in different
+positions: middle, top and bottom. The position is based on the value of the position
+argument.
+    position - real
+    -1         Top of the window
+    0          Center of the window
+    1          Bottom of the window
+*/
+void print_middle(WINDOW* win, int position, char* message)
+{
+    // Cursor position in which the message starts
+    int x_start, y_start;
+
+    // Get window dimensions
+    int win_width, win_height;
+    getmaxyx(win, win_height, win_width);
+
+    // Calculates vertical cursor position to print the message
+    switch (position)
+    {
+    case -1:
+        // print in the bottom of the grid (top of the window) 
+        y_start = 1;
+        break;
+    
+    case 0:
+        // Print in middle line
+        y_start = win_height / 2;
+        break;
+
+    case 1:
+        // Print in the top of the grid (bottom of the window)
+        y_start = win_height - 2;
+        break;
+    }
+
+    // Calculates horizontal cursor position to print the message
+    x_start = (win_width - strlen(message)) / 2;
+    
+    // Print message
+    clear_line(win, y_start);
+    mvwaddstr(win, y_start, x_start, message);
+    // wrefresh(win);
+}
+
+
+/*
 Runs the timer and handles progress in a non-default window
 */
 int run_timer(int minutes)
@@ -129,11 +186,12 @@ int run_timer(int minutes)
     // Create window to store form
     // popup_window = newwin(rows + 4, cols + 4, 4, 4);
     popup_window = create_subwindow(progress_window, 0.5);
+    print_middle(popup_window, -1, "Insert to confirm");
     keypad(popup_window, TRUE);
 
     // Attach form to window
     set_form_win(my_form, popup_window);
-    set_form_sub(my_form, derwin(popup_window, rows, cols, 2, 2));
+    set_form_sub(my_form, derwin(popup_window, rows, cols, 15, 5));
 
     box(popup_window, 0, 0);
     wtimeout(popup_window, 0);
@@ -203,7 +261,7 @@ int run_timer(int minutes)
                 // else if -> run cmatrix window...
                 else 
                 {
-                    mvwaddstr(popup_window,0,0,"Try again...");
+                    print_middle(popup_window, 0, "Try again...");
                 }
                 form_driver(my_form, REQ_DEL_LINE);
                 break;
@@ -241,7 +299,8 @@ int run_timer(int minutes)
             seconds_display = total_seconds % 60;
             
             // Checks if the conditions to shift cursor are filled
-            if (col_trigger >= 1) {
+            if (col_trigger >= 1) 
+            {
                 mvwaddch(progress_window, bar_starty, bar_startx + current_col, '=');
                 col_trigger = 0;
                 current_col++;
@@ -292,10 +351,4 @@ void run_alert()
     timeout(-1);
 }
 
-void clear_line(WINDOW* win, int line_number)
-{
-    wmove(win, line_number, 0);
-    clrtoeol();
-    box(win, 0, 0);
-}
 
