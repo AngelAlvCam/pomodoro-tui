@@ -3,6 +3,24 @@
 #include <form.h>
 #include <unistd.h>  // For usleep
 
+/* This function creates a window that fits exactly in the middle of 
+a given parent window. */
+WINDOW* create_subwindow(WINDOW* parent, float scale)
+{
+    int parent_start_x, parent_start_y;
+    int parent_width, parent_height;
+
+    getmaxyx(parent, parent_height, parent_width);
+    getbegyx(parent, parent_start_y, parent_start_x);
+
+    int child_height = (int)(parent_height * scale);
+    int child_width = (int)(parent_width * scale);
+    int child_start_y = (int)(parent_start_y + ((parent_height - child_height) / 2));
+    int child_start_x = (int)(parent_start_x + ((parent_width - child_width) / 2));
+
+    return newwin(child_height, child_width, child_start_y, child_start_x);
+}
+
 // int seconds_passed(int, int*);
 // int run_timer(int);
 // void run_alert();
@@ -68,14 +86,15 @@ int run_timer(int minutes)
     /*
     Creation of progress-bar/counter window 
     */
-    WINDOW* progress_window = newwin(LINES - 10, COLS - 10, 5, 5);
+    // WINDOW* progress_window = newwin(LINES - 10, COLS - 10, 5, 5);
+    WINDOW* progress_window = create_subwindow(stdscr, 0.9);
     box(progress_window, 0, 0);
     wtimeout(progress_window, 0);
 
     // Define progress bar parameters
     int cols, rows;
     getmaxyx(progress_window, rows, cols);
-    int bar_width = 60;
+    int bar_width = (int)(cols * 0.8);
     int bar_starty = rows / 2;
     int bar_startx = (cols - bar_width) / 2;
 
@@ -108,7 +127,8 @@ int run_timer(int minutes)
     scale_form(my_form, &rows, &cols);
 
     // Create window to store form
-    popup_window = newwin(rows + 4, cols + 4, 4, 4);
+    // popup_window = newwin(rows + 4, cols + 4, 4, 4);
+    popup_window = create_subwindow(progress_window, 0.5);
     keypad(popup_window, TRUE);
 
     // Attach form to window
@@ -166,6 +186,11 @@ int run_timer(int minutes)
             case KEY_RIGHT:
                 form_driver(my_form, REQ_RIGHT_CHAR);
                 break;
+            
+                case KEY_BACKSPACE:
+                form_driver(my_form, REQ_PREV_CHAR);
+                form_driver(my_form, REQ_DEL_CHAR);
+                break;
 
             case '\n':
                 form_driver(my_form, REQ_NEXT_FIELD); // Change to NULL field to force sync
@@ -175,6 +200,7 @@ int run_timer(int minutes)
                     total_seconds = -1;
                     counter_status = FALSE;
                 } 
+                // else if -> run cmatrix window...
                 else 
                 {
                     mvwaddstr(popup_window,0,0,"Try again...");
@@ -193,7 +219,7 @@ int run_timer(int minutes)
         {
             // else, if popup is not active... open it by pressing esc key
             ch = wgetch(progress_window); // read input from default window (stdscr)
-            if (ch == 27) 
+            if (ch == 'q') 
             {
                 show_panel(my_panel[1]);
                 is_popup_active = TRUE;
@@ -272,3 +298,4 @@ void clear_line(WINDOW* win, int line_number)
     clrtoeol();
     box(win, 0, 0);
 }
+
