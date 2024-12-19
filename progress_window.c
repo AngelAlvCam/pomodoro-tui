@@ -9,7 +9,7 @@ Function to clear a line in a given boxed window
 void clear_line(WINDOW* win, int line_number)
 {
     wmove(win, line_number, 0);
-    clrtoeol();
+    wclrtoeol(win);
     box(win, 0, 0);
 }
 
