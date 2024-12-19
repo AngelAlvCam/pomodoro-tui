@@ -3,6 +3,14 @@
 #include <form.h>
 #include <unistd.h>  // For usleep
 
+int seconds_passed(int, int*);
+int run_timer(int);
+void run_alert(WINDOW*);
+void clear_line(WINDOW*, int);
+WINDOW* create_subwindow(WINDOW*, float);
+void embed_form(WINDOW*, FORM*);
+void print_middle(WINDOW*, int, char*);
+
 /*
 Function to clear a line in a given boxed window
 */
@@ -336,6 +344,15 @@ int run_timer(int minutes)
     free_field(field[0]);
     free_field(field[1]);
 
+    // Check if it is necessary to run the alert
+    if (counter_status)    
+    {
+        // Run alert in popup
+        werase(popup_window); // Clean the previous popup content
+        run_alert(popup_window);
+    }
+
+    // Delete panels
     del_panel(my_panel[0]);
     del_panel(my_panel[1]);
 
@@ -344,32 +361,33 @@ int run_timer(int minutes)
     wrefresh(popup_window);
     delwin(popup_window);
 
+    // Delete progress bar window
     werase(progress_window);
     wrefresh(progress_window);
     delwin(progress_window);
 
-    // del_panel(my_panel[0]);
-    // del_panel(my_panel[1]);
+
     return counter_status;
 }
 
 /*
 Function that triggers an alarm in the standard screen
 */
-void run_alert()
+void run_alert(WINDOW* win)
 {
-    timeout(0); // Sets getch as non-blocking
+    wtimeout(win, 0); // Sets getch as non-blocking in wwin
+    print_middle(win, 0, "Press q to continue!");
     int ch;
     while(1)
     {
         beep();
-        ch = getch();
+        ch = wgetch(win);
         if (ch == 'q')
         {
             break;
         }
     }
-    timeout(-1);
+    wtimeout(win, -1);
 }
 
 

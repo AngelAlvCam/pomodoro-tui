@@ -69,7 +69,6 @@ int main()
                 clear_line(stdscr, LINES / 2 - 2);
                 if (run_timer(1))
                 {
-                    run_alert();
                     message = "Well done!";
                 }
                 else
