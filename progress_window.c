@@ -89,6 +89,26 @@ int seconds_passed(int target, int* counter)
 }
 
 /*
+This function embeds a form in the center of a window
+*/
+void embed_form(WINDOW* win, FORM* form)
+{
+    // Calculates dimension of the form
+    int form_height, form_width;
+    scale_form(form, &form_height, &form_width);
+
+    // Calculates dimension of the window
+    int win_height, win_width;
+    getmaxyx(win, win_height, win_width);
+
+    // Attach form to window
+    int start_x = (win_width - form_width) / 2;
+    int start_y = (win_height - form_height) / 2;
+    set_form_win(form, win);
+    set_form_sub(form, derwin(win, form_height, form_width, start_y, start_x));
+}
+
+/*
 Function that prints a string in the middle of a given window, in different
 positions: middle, top and bottom. The position is based on the value of the position
 argument.
@@ -178,10 +198,10 @@ int run_timer(int minutes)
     set_field_back(field[0], A_UNDERLINE);
     field_opts_off(field[0], O_AUTOSKIP);
 
-    // Create form
+    // Create form based on the fields
     my_form = new_form(field);
-    getmaxyx(stdscr, rows, cols);
-    scale_form(my_form, &rows, &cols);
+    // getmaxyx(stdscr, rows, cols);
+    // scale_form(my_form, &rows, &cols);
 
     // Create window to store form
     // popup_window = newwin(rows + 4, cols + 4, 4, 4);
@@ -190,8 +210,9 @@ int run_timer(int minutes)
     keypad(popup_window, TRUE);
 
     // Attach form to window
-    set_form_win(my_form, popup_window);
-    set_form_sub(my_form, derwin(popup_window, rows, cols, 15, 5));
+    // set_form_win(my_form, popup_window);
+    // set_form_sub(my_form, derwin(popup_window, rows, cols, 15, 5));
+    embed_form(popup_window, my_form);
 
     box(popup_window, 0, 0);
     wtimeout(popup_window, 0);
@@ -261,7 +282,7 @@ int run_timer(int minutes)
                 // else if -> run cmatrix window...
                 else 
                 {
-                    print_middle(popup_window, 0, "Try again...");
+                    print_middle(popup_window, 1, "Try again...");
                 }
                 form_driver(my_form, REQ_DEL_LINE);
                 break;
