@@ -239,7 +239,6 @@ int run_timer(int minutes)
     /*
     Creation of progress-bar/counter window 
     */
-    // WINDOW* progress_window = newwin(LINES - 10, COLS - 10, 5, 5);
     WINDOW* progress_window = create_subwindow(stdscr, 0.9);
     box(progress_window, 0, 0);
     wtimeout(progress_window, 0);

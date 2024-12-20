@@ -2,7 +2,7 @@
 #include <ncurses.h>
 #include "progress_window.h"
 
-int timer(int);
+int set_timer(int*, int, int, int);
 
 int main()
 {
@@ -14,76 +14,97 @@ int main()
     box(stdscr,0,0);
     keypad(stdscr, TRUE);
 
-    // Display title
-    // char* title = "POMODORO TUI";
-    // mvaddstr(LINES / 2, (COLS - strlen(title)) / 2, title);
-    // refresh();
+    // time configuration
+    int min_minutes, max_minutes, step;
+
+    // Boolean to check if the timer is in focus or rest mode
+    int is_focus = TRUE;
 
     // Message
     char* message = NULL;
 
     // Minutes selection
-    int minutes = 5; // Default and minimum
+    int task_minutes = 25;
+    int rest_minutes = 5;    
+
+    while(1)
+    {
+        // Set task timer
+        print_middle(stdscr, -1, "TASK MODE");
+        int status = set_timer(&task_minutes, 5, 60, 5);
+        
+        // quit app
+        if (status == 2)
+        {
+            break;
+        } 
+        
+        switch(status)
+        {
+            // If the task timer ran without quitting, change to rest mode
+            case 0:
+                print_middle(stdscr, -1, "REST MODE");
+                print_middle(stdscr, 1, "Well done! Now take a rest");
+                set_timer(&rest_minutes, 1, 30, 1);
+                print_middle(stdscr, 1, "Great! Lets keep working");
+                break;
+
+            // If the task timer got aborted, keep the task mode
+            case 1:
+                print_middle(stdscr, 1, "Good luck the next time");
+                break;
+        }
+    }
+
+    endwin();
+    return 0;
+}
+
+/*
+Function to configure a timer, for task mode or rest mode
+*/
+int set_timer(int* minutes, int min_minutes, int max_minutes, int step)
+{
+    int has_finished = FALSE;
     while(1)
     {
         // Display the chosen value 
-        render_time(stdscr, minutes, 0);
+        render_time(stdscr, *minutes, 0);
         
-        // Instruction to set message if needed        
-        if (message != NULL)
-        {
-            mvaddstr(LINES /2 - 2, (COLS - strlen(message)) / 2, message);
-        }
-        else
-        {
-            // Delete message after 5 seconds
-        }
-
-        refresh();
-
         int ch = getch();
         if (ch == 'q' || ch == 27)
         {
-            break;
+            return 2;
+        }
+        else if (ch == '\n')
+        {
+            if (run_timer(1))
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
         }
         else
         {
             switch (ch)
             {
             case KEY_LEFT:
-                if (minutes > 5)
+                if (*minutes > min_minutes)
                 {
-                    minutes -= 5;
+                    *minutes -= step;
                 }
                 break;
 
             case KEY_RIGHT:
-                if (minutes < 60)
+                if (*minutes < max_minutes)
                 {
-                    minutes += 5;
+                    *minutes += step;
                 }
-                break;
-
-            case '\n':
-                // Start running app!
-                clear_line(stdscr, LINES / 2 - 2);
-                if (run_timer(1))
-                {
-                    message = "Well done!";
-                }
-                else
-                {
-                    message = "What a shame... better luck next time";
-                }
-                break;
-        
-            default:
-                // None
                 break;
             }
-        }
+        }    
     }
-
-    endwin();
-    return 0;
 }
