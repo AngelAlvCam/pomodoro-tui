@@ -11,6 +11,107 @@ WINDOW* create_subwindow(WINDOW*, float);
 void embed_form(WINDOW*, FORM*);
 void print_middle(WINDOW*, int, char*);
 
+const char* ascii_digits[10][5] = {
+        { // Symbol 0
+            "000000",
+            "00  00",
+            "00  00",
+            "00  00",
+            "000000"
+        },
+        { // Symbol 1
+            "  11  ",
+            "1111  ",
+            "  11  ",
+            "  11  ",
+            "111111"
+        },
+        { // Symbol 2
+            "222222",
+            "22  22",
+            "   22 ",
+            "  22  ",
+            "222222"
+        },
+        { // Symbol 3
+            "333333",
+            "33  33",
+            "   33 ",
+            "33  33",
+            "333333"
+        },
+        { // Symbol 4
+            "44  44",
+            "44  44",
+            "444444",
+            "    44",
+            "    44"
+        },
+        { // Symbol 5
+            "555555",
+            "55    ",
+            "555555",
+            "    55",
+            "555555"
+        },
+        { // Symbol 6
+            "666666",
+            "66    ",
+            "666666",
+            "66  66",
+            "666666"
+        },
+        { // Symbol 7
+            "777777",
+            "   77 ",
+            "  77  ",
+            " 77   ",
+            "77    "
+        },
+        { // Symbol 8
+            "888888",
+            "88  88",
+            "888888",
+            "88  88",
+            "888888"
+        },
+        { // Symbol 9
+            "999999",
+            "99  99",
+            "999999",
+            "    99",
+            "    99"
+        }
+    }; 
+
+void render_time(WINDOW* win, int minutes, int seconds)
+{
+    // Calculate starting position
+    int width, height;
+    getmaxyx(win, height, width); 
+    int startx = (width - 23) / 2;
+    int starty = (height - 6) / 2;
+
+    // check which digits to render
+    int minutes_dec = minutes / 10;
+    int minutes_unit = minutes % 10;
+    int seconds_dec = seconds / 10;
+    int seconds_unit = seconds % 10;
+
+    int digits[4] = {minutes_dec, minutes_unit, seconds_dec, seconds_unit};
+
+    // digits are arrays of 6 lines of 5 characters
+    for (int i = 0; i < 4; i++)
+    {
+        int current_digit = digits[i];
+        for (int j = 0; j < 5; j++)
+        {
+            mvwaddstr(win, starty + j, startx, ascii_digits[current_digit][j]);
+        }
+        startx = startx + 7;
+    }
+}
+
 /*
 Function to clear a line in a given boxed window
 */
@@ -179,20 +280,20 @@ int run_timer(int minutes)
     // Define progress bar parameters
     int cols, rows;
     getmaxyx(progress_window, rows, cols);
-    int bar_width = (int)(cols * 0.8);
-    int bar_starty = rows / 2;
-    int bar_startx = (cols - bar_width) / 2;
+    // int bar_width = (int)(cols * 0.8);
+    // int bar_starty = rows / 2;
+    // int bar_startx = (cols - bar_width) / 2;
 
     // Define counter parameters; format is {00:00}, len = 5
-    int counter_starty = bar_starty - 2;
-    int counter_startx = (cols - 5) / 2;
+    // int counter_starty = bar_starty - 2;
+    // int counter_startx = (cols - 5) / 2;
 
     // Time parameters
     int total_seconds = minutes * 60;
 
     // Draw the brackets '[' and ']' for the progress bar in the default window
-    mvwaddch(progress_window, bar_starty, bar_startx - 1, '[');
-    mvwaddch(progress_window, bar_starty, bar_startx + bar_width, ']');
+    // mvwaddch(progress_window, bar_starty, bar_startx - 1, '[');
+    // mvwaddch(progress_window, bar_starty, bar_startx + bar_width, ']');
     // refresh();  // This only affects default window
 
     /* Creation of pop-up window with a form to quit */
@@ -240,9 +341,9 @@ int run_timer(int minutes)
     doupdate();
 
     // Calculate bar increment ratio
-    float bar_ratio = (float)bar_width / total_seconds;
-    float col_trigger = bar_ratio;
-    int current_col = 0;
+    // float bar_ratio = (float)bar_width / total_seconds;
+    // float col_trigger = bar_ratio;
+    // int current_col = 0;
     int counter_status = TRUE; 
 
     // Main loop
@@ -317,7 +418,8 @@ int run_timer(int minutes)
         doupdate();
 
         // Print counter
-        mvwprintw(progress_window, counter_starty, counter_startx, "%02d:%02d", minutes_display, seconds_display);
+        // mvwprintw(progress_window, counter_starty, counter_startx, "%02d:%02d", minutes_display, seconds_display);
+        render_time(progress_window, minutes_display, seconds_display);
         // refresh();
 
         // Update time and bar progress
@@ -328,13 +430,13 @@ int run_timer(int minutes)
             seconds_display = total_seconds % 60;
             
             // Checks if the conditions to shift cursor are filled
-            if (col_trigger >= 1) 
-            {
-                mvwaddch(progress_window, bar_starty, bar_startx + current_col, '=');
-                col_trigger = 0;
-                current_col++;
-            }
-            col_trigger += bar_ratio;
+            // if (col_trigger >= 1) 
+            // {
+            //     mvwaddch(progress_window, bar_starty, bar_startx + current_col, '=');
+            //     col_trigger = 0;
+            //     current_col++;
+            // }
+            // col_trigger += bar_ratio;
         }
     }
 
