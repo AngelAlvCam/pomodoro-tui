@@ -15,9 +15,9 @@ int main()
     keypad(stdscr, TRUE);
 
     // Display title
-    char* title = "POMODORO TUI";
-    mvaddstr(LINES / 2, (COLS - strlen(title)) / 2, title);
-    refresh();
+    // char* title = "POMODORO TUI";
+    // mvaddstr(LINES / 2, (COLS - strlen(title)) / 2, title);
+    // refresh();
 
     // Message
     char* message = NULL;
@@ -27,8 +27,8 @@ int main()
     while(1)
     {
         // Display the chosen value 
-        mvprintw(LINES / 2 + 2, (COLS - 5) / 2, "%02d:00", minutes);
-
+        render_time(stdscr, minutes, 0);
+        
         // Instruction to set message if needed        
         if (message != NULL)
         {

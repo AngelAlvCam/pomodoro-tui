@@ -84,12 +84,13 @@ const char* ascii_digits[10][5] = {
         }
     }; 
 
+
 void render_time(WINDOW* win, int minutes, int seconds)
 {
     // Calculate starting position
     int width, height;
     getmaxyx(win, height, width); 
-    int startx = (width - 23) / 2;
+    int startx = (width - 27) / 2;
     int starty = (height - 6) / 2;
 
     // check which digits to render
@@ -139,40 +140,6 @@ WINDOW* create_subwindow(WINDOW* parent, float scale)
 
     return newwin(child_height, child_width, child_start_y, child_start_x);
 }
-
-// int seconds_passed(int, int*);
-// int run_timer(int);
-// void run_alert();
-// 
-// int main() {
-//     initscr();                // Start ncurses mode
-//     noecho();                 // Disable character echoing
-//     raw();
-//     curs_set(0);              // Hide the cursor
-//     timeout(0);               // Non-blocking input
-//     box(stdscr, 0, 0);        // Draw a border around the default window
-// 
-//     // Call run timer here
-//     if (run_timer(1))
-//     {
-//         mvprintw(1, 1, "Well done");
-//         run_alert();
-//     }
-//     else
-//     {
-//         mvprintw(1, 1, "Good luck next time");
-//     }
-//     refresh();
-// 
-//     // Configure getch to be blocking in the default screen, 
-//     timeout(-1);
-// 
-//     beep(); // Makes a sound in the terminal before quitting
-//     getch();  // Wait until a key is pressed
-// 
-//     endwin();  // Clean up and restore terminal to normal
-//     return 0;
-// }
 
 /*
 target is a integer that refer to the expected amount of seconds to wait.
@@ -280,21 +247,9 @@ int run_timer(int minutes)
     // Define progress bar parameters
     int cols, rows;
     getmaxyx(progress_window, rows, cols);
-    // int bar_width = (int)(cols * 0.8);
-    // int bar_starty = rows / 2;
-    // int bar_startx = (cols - bar_width) / 2;
-
-    // Define counter parameters; format is {00:00}, len = 5
-    // int counter_starty = bar_starty - 2;
-    // int counter_startx = (cols - 5) / 2;
 
     // Time parameters
     int total_seconds = minutes * 60;
-
-    // Draw the brackets '[' and ']' for the progress bar in the default window
-    // mvwaddch(progress_window, bar_starty, bar_startx - 1, '[');
-    // mvwaddch(progress_window, bar_starty, bar_startx + bar_width, ']');
-    // refresh();  // This only affects default window
 
     /* Creation of pop-up window with a form to quit */
     FIELD *field[2];
@@ -309,24 +264,18 @@ int run_timer(int minutes)
 
     // Create form based on the fields
     my_form = new_form(field);
-    // getmaxyx(stdscr, rows, cols);
-    // scale_form(my_form, &rows, &cols);
 
     // Create window to store form
-    // popup_window = newwin(rows + 4, cols + 4, 4, 4);
     popup_window = create_subwindow(progress_window, 0.5);
     print_middle(popup_window, -1, "Insert to confirm");
     keypad(popup_window, TRUE);
 
     // Attach form to window
-    // set_form_win(my_form, popup_window);
-    // set_form_sub(my_form, derwin(popup_window, rows, cols, 15, 5));
     embed_form(popup_window, my_form);
 
     box(popup_window, 0, 0);
     wtimeout(popup_window, 0);
     post_form(my_form);
-    //wrefresh(popup);
 
     /* 
     Setting the windows as panels 
@@ -340,10 +289,6 @@ int run_timer(int minutes)
     update_panels();
     doupdate();
 
-    // Calculate bar increment ratio
-    // float bar_ratio = (float)bar_width / total_seconds;
-    // float col_trigger = bar_ratio;
-    // int current_col = 0;
     int counter_status = TRUE; 
 
     // Main loop
@@ -418,9 +363,7 @@ int run_timer(int minutes)
         doupdate();
 
         // Print counter
-        // mvwprintw(progress_window, counter_starty, counter_startx, "%02d:%02d", minutes_display, seconds_display);
         render_time(progress_window, minutes_display, seconds_display);
-        // refresh();
 
         // Update time and bar progress
         if (seconds_passed(1, &micro_accumulator))
@@ -428,15 +371,6 @@ int run_timer(int minutes)
             total_seconds--;
             minutes_display = total_seconds / 60;
             seconds_display = total_seconds % 60;
-            
-            // Checks if the conditions to shift cursor are filled
-            // if (col_trigger >= 1) 
-            // {
-            //     mvwaddch(progress_window, bar_starty, bar_startx + current_col, '=');
-            //     col_trigger = 0;
-            //     current_col++;
-            // }
-            // col_trigger += bar_ratio;
         }
     }
 
