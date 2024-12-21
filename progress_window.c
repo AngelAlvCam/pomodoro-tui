@@ -1,7 +1,9 @@
+#include <pulse/simple.h>
 #include <string.h>
 #include <panel.h>
 #include <form.h>
 #include <unistd.h>  // For usleep
+#include "sound_test.h"
 
 int seconds_passed(int, int*);
 int run_timer(int);
@@ -412,10 +414,14 @@ void run_alert(WINDOW* win)
 {
     wtimeout(win, 0); // Sets getch as non-blocking in wwin
     print_middle(win, 0, "Press q to continue!");
+    int accumulator = 0;
     int ch;
     while(1)
     {
-        beep();
+        if (seconds_passed(1, &accumulator)) 
+        {
+            beep_sound();
+        }
         ch = wgetch(win);
         if (ch == 'q')
         {
@@ -424,5 +430,3 @@ void run_alert(WINDOW* win)
     }
     wtimeout(win, -1);
 }
-
-

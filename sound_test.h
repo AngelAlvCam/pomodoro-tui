@@ -1,0 +1,1 @@
+int beep_sound();
